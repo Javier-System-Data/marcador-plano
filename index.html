@@ -2,7 +2,7 @@
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Marcador de plano</title>
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#1a3fb0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json" crossorigin="use-credentials"><meta name="theme-color" content="#1a3fb0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{--bg:#eef0f3;--fg:#1b2230;--card:#fff;--ac:#1a3fb0;--br:#cfd5df;--mut:#66707f}
 @media(prefers-color-scheme:dark){:root{--bg:#161a22;--fg:#e8ebf2;--card:#232936;--ac:#7c9cff;--br:#3b4354;--mut:#9aa3b5}}
@@ -76,6 +76,7 @@ header{padding-top:calc(4px + env(safe-area-inset-top,0px));padding-left:calc(6p
 #upd{padding-top:calc(8px + env(safe-area-inset-top,0px))}#more{top:calc(46px + env(safe-area-inset-top,0px))}
 #ntT{flex:1;width:100%;border:0;border-radius:0;padding:12px;font-size:16px;line-height:1.45;resize:none;background:var(--card);-webkit-user-select:text;user-select:text}
 #apL{flex:1;overflow:auto;padding:6px}.ap{background:var(--card);border:1px solid var(--br);border-radius:8px;padding:8px;margin-bottom:6px;display:grid;gap:6px}.ap .r{display:flex;gap:6px;align-items:center}.ap textarea{flex:1;min-height:56px;font-size:15px}
+#lim{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 8px;font-size:12px;font-weight:600;background:#fff3cd;color:#664d03;border-bottom:1px solid #e0c36a}#lim[hidden]{display:none}#lim.rojo{background:#b3261e;color:#fff;border-bottom-color:#8c1d18}#lim span{flex:1;min-width:200px}#lim button{min-height:28px;padding:2px 10px;font-size:12px}#lim.sac{animation:sac .5s}@keyframes sac{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 </style></head><body>
 <div id="upd" hidden><span>Hay una versión nueva. Guarda tu avance y actualiza.</span><button id="bUpd">Actualizar</button><button id="bLater">Después</button></div>
 <header>
@@ -83,6 +84,7 @@ header{padding-top:calc(4px + env(safe-area-inset-top,0px));padding-left:calc(6p
 <button id="bDat">Datos</button><button id="bCnt">Conteo</button><button class="p" id="bXl">Exportar</button><button id="bMore" aria-label="Más opciones">⋯</button>
 <input type="file" id="fa" accept=".txt,.json,text/plain,application/json" hidden>
 </header>
+<div id="lim" hidden><span id="limT"></span><button id="bVer">Verificar ahora</button></div>
 <div id="sum" hidden></div>
 <div id="ambBar" hidden>Ambiente actual: <b id="ambN"></b> ▾</div>
 <div id="more" hidden><button id="bNt">Notas (0 caracteres)</button><button id="bAp">Ambientes: orden y descripción</button><button id="bPr">Pruebas generales (0/21)</button><button id="bFs">Fotos sueltas</button><button id="bZip">Exportar fotos (ZIP)</button><button id="bFb">Compartir fotos (lotes)</button><button id="bUndo">Deshacer última marca</button><button id="bFit">Ajustar plano a la pantalla</button><button id="bPng">Exportar PNG</button><button id="bSv">Guardar avance (TXT)</button><button id="bOp">Abrir avance</button><label>Tamaño <input type="range" id="sz" min="5" max="35" value="12"></label><label>Fotos <select id="fpx"><option value="750">750 px</option><option value="1050">1050 px</option><option value="1600">1600 px</option></select></label><label>Estilo <select id="stl"><option value="s">Azul sólido</option><option value="o">Contorno, fondo blanco</option></select></label><div id="ver" style="color:var(--mut);font-size:12px;text-align:right"></div></div>
@@ -322,6 +324,7 @@ wrap.addEventListener('pointerup',up);wrap.addEventListener('pointercancel',up);
 wrap.addEventListener('wheel',e=>{e.preventDefault();const q=pt(e),k=e.deltaY<0?1.15:1/1.15;V.x=q.x-(q.x-V.x)*k;V.y=q.y-(q.y-V.y)*k;V.s*=k;draw()},{passive:false});
 
 function tap(q){
+  if(bloqLim())return;
   const p=P[cur];cierraMas();if(!p||!$('dlg').hidden)return;if(!$('dd').hidden){$('dd').hidden=true;return}
   const x=(q.x-V.x)/V.s,y=(q.y-V.y)/V.s,r=R*p.w;
   if(x<0||y<0||x>p.w||y>p.h)return;
@@ -390,7 +393,7 @@ $('mCom').onclick=()=>{
   r.start();
 };
 
-$('bLoad').onclick=()=>$('fi').click();
+$('bLoad').onclick=()=>{if(bloqLim())return;$('fi').click()};
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([$('pdfw').textContent],{type:'text/javascript'}));
 function add(src,w,h,key,url,mm,dd,xx){
   const g=mm?{m:mm,d:Object.assign(D0(),dd||{}),pr:(xx&&xx.pr)||{},amb:(xx&&xx.amb)||'',fs:[],nt:(xx&&xx.nt)||'',ad:(xx&&xx.ad)||{},ao:(xx&&xx.ao)||[]}:guardada(key);
@@ -478,7 +481,7 @@ $('fa').onchange=async e=>{
     save();fit();tabs();draw();resumen();
   }catch(x){alert('No se pudo abrir este archivo de avance.')}
 };
-$('bUndo').onclick=()=>{cierraMas();const p=P[cur];if(p&&p.m.length){borraFotosMarca(p.m.pop());toca(p);save();tabs();draw()}};
+$('bUndo').onclick=()=>{cierraMas();if(bloqLim())return;const p=P[cur];if(p&&p.m.length){borraFotosMarca(p.m.pop());toca(p);save();tabs();draw()}};
 $('bFit').onclick=()=>{cierraMas();fit();draw()};
 $('stl').onchange=()=>{STY=$('stl').value;save();draw()};
 $('sz').oninput=()=>{R=$('sz').value/1000;save();draw()};
@@ -656,7 +659,7 @@ function miniatura(c,w,h){const t=document.createElement('canvas'),s=220/Math.ma
 async function nuevaFoto(r){const id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await fput({id,key:P[cur].key,blob:r.blob,th:r.th,w:r.w,h:r.h,an:[],ts:Date.now()});THC[id]=r.th;return id}
 /* --- cámara: nativa en celular/tablet, webcam en PC --- */
 let capCb=null,WS=null;
-function tomar(cb){capCb=cb;try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(!USA_NAT&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)abrirWc();else $('cam').click()}
+function tomar(cb){if(bloqLim())return;capCb=cb;try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}if(!USA_NAT&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)abrirWc();else $('cam').click()}
 const recibe=async f=>{try{const r=await procesaFoto(f);capCb&&capCb(r)}catch(x){alert('No se pudo procesar la foto.')}};
 $('cam').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)recibe(f)};
 async function abrirWc(){try{WS=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920},height:{ideal:1080}}});$('wcV').srcObject=WS;$('wc').hidden=false}catch(e){$('cam').click()}}
@@ -921,8 +924,72 @@ addEventListener('resize',()=>{rs();});
 new ResizeObserver(()=>{rs();}).observe(wrap);
 rs();resumen();
 
+/* ===== Verificación en línea cada 3 días (modo limitado) =====
+   Cada apertura con internet y sesión válida pide estado.json al propio sitio. Si responde lo esperado,
+   se guarda la hora (mp:valid) y el reloj de 72 h vuelve a cero. Pasadas 72 h sin verificar, el plano
+   pasa a modo limitado: no se crean ni editan puntos, ni se cargan planos, ni se toman fotos; sí se puede
+   ver, contar, guardar avance y exportar. Los datos guardados nunca se borran. */
+const VERIF_MS=72*3600*1000,AVISO_MS=60*3600*1000,TOL_RELOJ=10*60*1000;
+let LIM=false,verifBusy=false,verifUlt=0;
+const lsg=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lss=(k,v)=>{try{localStorage.setItem(k,String(v))}catch(e){}};
+const enSitio=()=>/^https?:$/.test(location.protocol);
+const fmtLim=t=>new Date(t).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+function evalua(){
+  const b=$('lim');
+  if(!enSitio()){LIM=false;b.hidden=true;return}
+  const t=Date.now();let v=+lsg('mp:valid')||0;
+  if(!v){v=t;lss('mp:valid',v)}
+  const visto=+lsg('mp:visto')||0;
+  const atras=t<visto-TOL_RELOJ||v>t+TOL_RELOJ;
+  if(!atras&&t>visto)lss('mp:visto',t);
+  const edad=t-v;
+  LIM=atras||edad>VERIF_MS;
+  if(LIM){
+    b.className='rojo';b.hidden=false;
+    $('limT').textContent=atras
+      ?'La fecha del dispositivo no es coherente. Conéctate a internet para verificar. Mientras tanto no se pueden marcar puntos; sí guardar avance y exportar.'
+      :'Modo limitado: hace más de 3 días que no se verifica la conexión. Conéctate a internet para volver a marcar. Puedes seguir viendo, contando, guardando avance y exportando.';
+  }else if(edad>AVISO_MS){
+    b.className='';b.hidden=false;
+    $('limT').textContent='Conéctate a internet antes del '+fmtLim(v+VERIF_MS)+' para no pasar a modo limitado.';
+  }else b.hidden=true;
+}
+function bloqLim(){
+  if(!LIM)return false;
+  const b=$('lim');b.classList.remove('sac');void b.offsetWidth;b.classList.add('sac');
+  return true;
+}
+async function verificar(manual){
+  if(!enSitio()||verifBusy)return;
+  const t0=Date.now();if(!manual&&t0-verifUlt<60000)return;
+  verifBusy=true;verifUlt=t0;let okv=false;
+  if(navigator.onLine!==false){
+    const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),8000);
+    try{
+      const r=await fetch('estado.json?t='+t0,{cache:'no-store',signal:ac.signal});
+      if(r.ok&&new URL(r.url).origin===location.origin){
+        const j=await r.json();
+        if(j&&j.app==='marcador-plano'){okv=true;const n=Date.now();lss('mp:valid',n);lss('mp:visto',n)}
+      }
+    }catch(e){}
+    clearTimeout(tm);
+  }
+  verifBusy=false;evalua();
+  if(manual){
+    if(okv)alert('Verificación correcta. Ya puedes seguir marcando.');
+    else if(navigator.onLine===false)alert('Sin conexión a internet. Conéctate y vuelve a intentar.');
+    else if(confirm('No se pudo verificar (puede que haya vencido tu sesión). Tu avance ya está guardado en el dispositivo. ¿Recargar para iniciar sesión?'))location.reload();
+  }
+}
+$('bVer').onclick=()=>verificar(true);
+addEventListener('online',()=>verificar());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){evalua();verificar()}});
+setInterval(evalua,60000);setInterval(()=>verificar(),30*60000);
+evalua();verificar();
+
 /* ===== Versión e instalación (solo cuando se abre desde un enlace https) ===== */
-const APP_VERSION='1.6.0';
+const APP_VERSION='1.7.0';
 $('ver').textContent='Versión '+APP_VERSION;
 let REG=null;
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
